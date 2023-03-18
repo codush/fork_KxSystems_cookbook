@@ -11,7 +11,7 @@ h:@[hopen;`::6812;{-2"Failed to open connection to publisher on port 6812: ",
 
 // subscribe to the required data
 // .u.sub[tablename; list of instruments]
-// ` is wildcard for all
+// ` is wildcard for all, Specifying ` for either parameter of .u.sub means all – all tables, all syms, or all tables and all syms.
 h(`.u.sub;`;`)
 
 \

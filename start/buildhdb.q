@@ -78,15 +78,25 @@ volprof:{
  m:(x-2*c)?1.0;
  {(neg count x)?x} m,0.5*b,e}
 
+
+/ write[sa,"/trade/";t];
 / =========================================================
 write:{
  t:.Q.en[dst] update sym:`p#sym from `sym xasc y;
  $[count dsp;
-  (` sv dsp,(`$"d",string dspx),`$x) set t;
-  (` sv dst,`$x) set t];}
+  (` sv dsp,(`$"d",string dspx),`$x) set t;             / ` sv https://code.kx.com/q/ref/sv/#filepath-components
+  (` sv dst,`$x) set t];}               
 / symbol data for tick demo
 
-sn:3 cut (
+
+/
+3 cut：每3个元素为一组
+sn的输出为一个nested list：
+`AMZN;"Amazon.com, Inc."; 92;
+`AMD;"ADVANCED MICRO DEVICES"; 33;
+...
+\
+sn:3 cut (                          
  `AMZN;"Amazon.com, Inc."; 92;
  `AMD;"ADVANCED MICRO DEVICES"; 33;
  `AIG;"AMERICAN INTL GROUP INC"; 27;
@@ -115,12 +125,12 @@ sn:3 cut (
  `TXN;"TEXAS INSTRUMENTS";18;
  `XPEV;"XPeng Inc."; 6)
 
-s:first each sn
-n:@[;1] each sn
-p:last each sn
-m:" ABHILNORYZ" / mode
-c:" 89ABCEGJKLNOPRTWZ" / cond
-e:"NONNONONNNNOONO" / ex
+s:first each sn         / =`AMZN`AMD`AIG`AAPL`BAC...       相当于@[;0] each sn
+n:@[;1] each sn         / ="Amazon..."  "ADVANCED..."  "AMERICAN..." ...
+p:last each sn          / =92  33  27...                   相当于@[;2] each sn
+m:" ABHILNORYZ"         / mode  
+c:" 89ABCEGJKLNOPRTWZ"  / cond
+e:"NONNONONNNNOONO"     / ex
 / gen
 
 vex:1.0005         / average volume growth per day
@@ -150,7 +160,7 @@ batch:{[x;len]
 / y max movement at any time (above/below)
 / z number of steps
 cgen:{
-  m:reciprocal y;
+  m:reciprocal y;                                     / https://code.kx.com/q/ref/reciprocal/
   while[any (m>p) or y<p:prds 1.0+x*normalrand z];
   p}
 
@@ -158,10 +168,10 @@ cgen:{
 getdates:{
  b:x 0;
  e:x 1;
- d:b + til 1 + e-b;
- d:d where 5> d-`week$d;
- hols:101 404 612 701 1001 1013 1225 1226;
- d where not ((`dd$d)+100*`mm$d) in hols}
+ d:b + til 1 + e-b;                         / 2013.05.01 2013.05.02 2013.05.03 2013.05.04 2013.05.05 2013.05.06 2013.05.07 ..
+ d:d where 5> d-`week$d;                    / `week$d是转化为周。 5>d-`week$d是寻找工作日周一-周五
+ hols:101 404 612 701 1001 1013 1225 1226;  / holidays
+ d where not ((`dd$d)+100*`mm$d) in hols}   / dd$: 转化为日期的日https://code.kx.com/q/ref/cast/#temporal
 
 / =========================================================
 makeprices:{
@@ -171,19 +181,20 @@ makeprices:{
 
 / =========================================================
 / day volumes
-makevolumes:{
+makevolumes:{                                     /????
  v:cgen[0.03;3;x];
  a:vex xexp neg x;
  0.05|2&v*a+((reciprocal last v)-a)*int01 x}
 / main
 
-cnt:count s
-dates:getdates bgn,end
-nd:count dates
+cnt:count s                       / = 27
+dates:getdates bgn,end            / = 2013.05.01 2013.05.02 2013.05.03 2013.05.06 2013.05.07 .. 
+nd:count dates                    / = 20
 td:([]date:();sym:();open:();high:();low:();close:();price:();size:())
 
 prices:makeprices nd + 1
-volumes:floor (cnt*nt*qpt+npt) * makevolumes nd
+volumes:floor (cnt*nt*qpt+npt) * makevolumes  /???? floor (27*1000*5*3) * 
+
 dspx:0
 patt:{update sym:`p#sym from `sym`time xasc x}
 
@@ -216,6 +227,6 @@ day each til nd;
   t:([]date:last dates;time:r;sym:s qx;price:qp+qa*-1 1 m;size:vol2 nl2;side:"BS" m;ex:e qx);
   (` sv dst,`depth) set .Q.en[dst] t;}[];
 
-(` sv dst,`daily) set .Q.en[dst] td;
+(` sv dst,`daily) set .Q.en[dst] td;                       / ` sv https://code.kx.com/q/ref/sv/#filepath-components
 (` sv dst,`mas) set .Q.en[dst] ([]sym:s;name:n);
 if[count dsp;(` sv dst,`par.txt) 0: ((1_string dsp),"/d") ,/: string til dsx];
